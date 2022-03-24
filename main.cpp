@@ -25,6 +25,10 @@ int main()
     cin >> base;
     cout << "Enter a big integer" << endl;
     switch (base) {
+        case 2: {
+            test.in2();
+            break;
+        }
         case 10: {
             test.in10();
             break;
@@ -49,6 +53,10 @@ int main()
             res = square.out10().str();
             break;
         }
+        case 2: {
+            res = square.out2().str();
+            break;
+        }
         default: return -666;
     }
     cout << res << endl << "Time took " << time_duration.count() << endl;
@@ -65,9 +73,14 @@ int main()
             res = square.out10().str();
             break;
         }
+        case 2: {
+            res = square.out2().str();
+            break;
+        }
         default: return -666;
     }
     cout << res << endl << "Time took " << time_duration.count() << endl;
+
     //calculatori.ru
 
     return 1;

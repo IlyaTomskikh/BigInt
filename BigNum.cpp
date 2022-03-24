@@ -21,22 +21,6 @@ private:
 public:
 
 //	DEC CIN/COUT
-    string in10()
-    {
-        string s;
-        cin >> s;
-        delete[] digits;
-        len = 1;
-        maxLen = (s.length() - 1) / (BASE_SIZE / 4) + 1;
-        digits = new BASE[maxLen];
-        for (int i = 0; i < maxLen; ++i) digits[i] = 0;
-        for (char i: s) if (i >= '0' && i <= '9') {
-                *this *= 10;
-                *this += i - '0';
-            }
-        this->lenNorm();
-        return s;
-    }
     friend istream & operator>> (istream &in, BigNum &that)
     {
         string s;
@@ -72,12 +56,42 @@ public:
         return out;
     }
 
-
+    string in2()
+    {
+        string str;
+        cin >> str;
+        delete[] digits;
+        len = 1;
+        maxLen = (str.length() - 1) / (BASE_SIZE / 4) + 1;
+        digits = new BASE[maxLen];
+        for (auto i = 0; i < maxLen; ++i) digits[i] ^= digits[i];
+        for (auto i : str) if (i == '0' || i == '1') {
+                *this *= 2;
+                *this += i - '0';
+            }
+        lenNorm();
+        return str;
+    }
+    string in10()
+    {
+        string s;
+        cin >> s;
+        delete[] digits;
+        len = 1;
+        maxLen = (s.length() - 1) / (BASE_SIZE / 4) + 1;
+        digits = new BASE[maxLen];
+        for (int i = 0; i < maxLen; ++i) digits[i] = 0;
+        for (char i: s) if (i >= '0' && i <= '9') {
+                *this *= 10;
+                *this += i - '0';
+            }
+        this->lenNorm();
+        return s;
+    }
     string in16()
     {
         string str;
         cin >> str;
-        if (str.length() > maxLen) return str;
         delete[] digits;
         len = (str.length() - 1) / (BASE_SIZE / 4) + 1;
         digits = new BASE[len];
@@ -107,58 +121,6 @@ public:
         lenNorm();
         return str;
     }
-
-//	HEX CIN/COUT
-//	friend istream & operator>> (istream &in, BigNum &that)
-//	{
-//		string str;
-//		in >> str;
-//		if (str.length() > that.maxLen) return in;
-//		delete[] that.digits;
-//		that.len = (str.length() - 1) / (BASE_SIZE / 4) + 1;
-//		that.digits = new BASE[that.len];
-//		for (int i = that.len; i--;) that.digits[i] = 0;
-//		int j = 0, k = 0;
-//		BASE tmp = 0;
-//		for (int i = str.length(); i--;)
-//		{
-//			if (str[i] <= '9' && str[i] >= '0') tmp = str[i] - '0';
-//			else
-//			{
-//				if (str[i] <= 'f' && str[i] >= 'a') tmp = str[i] - 'a' + 10;
-//				else
-//				{
-//					if (str[i] <= 'F' && str[i] >= 'A') tmp = str[i] - 'A' + 10;
-//					else break;
-//				}
-//			}
-//			that.digits[j] |= tmp << (k*4);
-//			++k;
-//			if (k >= BASE_SIZE / 4)
-//			{
-//				k = 0;
-//				++j;
-//			}
-//		}
-//		that.lenNorm();
-//		return in;
-//	}
-//	friend ostream & operator<< (ostream &out, BigNum &that)
-//	{
-//		if (that.digits)
-//		{
-//
-//			for (int i = that.len; i--;)
-//			{
-//				cout.width(BASE_SIZE / 4);
-//				cout.fill('0');
-//				out << hex << (int)that.digits[i] << dec;
-//			}
-//		}
-//		else out << ' ';
-//		return out;
-//	}
-
     stringstream out16()
     {
         stringstream ss;
@@ -186,6 +148,25 @@ public:
                 char _ch = tmp % 10 + '0';
                 s.push_back(_ch);
                 tmp /= 10;
+            }
+            reverse(s.begin(), s.end());
+            out << s;
+        }
+        else out << 0;
+        return out;
+    }
+    stringstream out2()
+    {
+        stringstream out;
+        if (!(digits[0] == 0 && len == 1))
+        {
+            string s;
+            BigNum tmp(*this);
+            while (tmp.digits[0] != 0 || tmp.len > 1)
+            {
+                char _ch = tmp % 2 + '0';
+                s.push_back(_ch);
+                tmp /= 2;
             }
             reverse(s.begin(), s.end());
             out << s;
