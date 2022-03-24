@@ -490,20 +490,20 @@ public:
     {
         auto res = BigNum(2 * len, true);
         auto x = digits;
-        auto y = res.digits;
-        QBASE cuv = 0;
+        auto x_square = res.digits;
+        QBASE cuv;
         for (auto i = 0; i < len; ++i)
         {
-            cuv = QBASE(y[2 * i]) + QBASE(x[i]) * QBASE(x[i]);
-            y[2 * i] = BASE(cuv);
+            cuv = QBASE(x_square[2 * i]) + QBASE(x[i]) * QBASE(x[i]);
+            x_square[2 * i] = BASE(cuv);
             for (auto j = i + 1; j < len; ++j)
             {
-                cuv = QBASE(y[i + j]) + QBASE(2) * QBASE(x[i]) * QBASE(x[j]) + (cuv >> BASE_SIZE);
-                y[i + j] = BASE(cuv);
+                cuv = QBASE(x_square[i + j]) + QBASE(2) * QBASE(x[i]) * QBASE(x[j]) + (cuv >> BASE_SIZE);
+                x_square[i + j] = BASE(cuv);
             }
-            QBASE tmp = (y[i + len + 1] << BASE_SIZE | y[i + len]) + QBASE(cuv >> BASE_SIZE);
-            y[i + len + 1] = BASE(tmp >> BASE_SIZE);
-            y[i + len] = BASE(tmp);
+            QBASE tmp = (x_square[i + len + 1] << BASE_SIZE | x_square[i + len]) + QBASE(cuv >> BASE_SIZE);
+            x_square[i + len + 1] = BASE(tmp >> BASE_SIZE);
+            x_square[i + len] = BASE(tmp);
         }
         res.lenNorm();
         return res;
