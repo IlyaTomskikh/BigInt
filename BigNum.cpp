@@ -509,6 +509,50 @@ public:
         return res;
     }
 
+    int bits()
+    {
+        for (auto i = (QBASE) len - 1; i >= 0; --i)
+            for (auto j = BASE_SIZE - 1; j >= 0; --j)
+                if ((digits[i] >> j) & 1) return i * BASE_SIZE + j + 1;
+        return 0;
+    }
+
+    bool getBit(int pos)
+    {
+        if (pos < 0) throw "NegativeIndexException";
+        auto item = pos / BASE_SIZE;    //to make it faster
+        if (item > 1) throw "IndexOutOfBoundsException";
+        return digits[item] & (1 << (pos % BASE_SIZE));
+    }
+
+    BigNum fastPow(BigNum power)
+    {
+        BigNum q = BigNum(*this);
+        BigNum res(1);
+        res += 1;
+        if (power[0] & 1) res = BigNum(*this);
+        auto powerBits = power.bits();
+        for (auto i = 1; i < powerBits; ++i)
+        {
+            q = q.fastSQ();
+            if (power.getBit(i)) res *= q;
+        }
+        return res;
+    }
+
+    BigNum slowPow(const BigNum& power) const
+    {
+        BigNum iter(1);
+        BigNum res(1);
+        res += 1;
+        while (iter < power)
+        {
+            res *= *this;
+            iter += 1;
+        }
+        return res;
+    }
+
     friend pair<BigNum, BigNum> divmod(BigNum &a, BigNum &that)	//a div that && a mod that
     {
         BigNum divident = a,
@@ -516,7 +560,7 @@ public:
                 q(a.len);
         q.len = 1;
         //нормализация (D1)
-        DBASE q_ = 0, r_ = 0, b = MAX_BASE_VALUE,
+        DBASE q_, r_, b = MAX_BASE_VALUE,
                 d = MAX_BASE_VALUE / ((DBASE)that.digits[that.len - 1] + (DBASE)1);;
         if(d != 1)
         {
@@ -549,19 +593,19 @@ public:
             int dl = divisor.len;
             BigNum tmpDivisor = divisor * q_;
             //умножить-вычесть (D4)
-            DBASE tmp = 0, k__ = 0;
+            DBASE tmp = 0, k_ = 0;
             int ix = j, jx = dl, i = ix, l = 0;
             while (i <= ix + jx)
             {
                 tmp = MAX_BASE_VALUE + DBASE(divident.digits[i]);
-                tmp -= DBASE(tmpDivisor.digits[l]) + DBASE(k__);
+                tmp -= DBASE(tmpDivisor.digits[l]) + DBASE(k_);
                 divident.digits[i] = (BASE) tmp;
-                k__ = !(tmp >> BASE_SIZE);
+                k_ = !(tmp >> BASE_SIZE);
                 ++i;
                 ++l;
             }
             divident.lenNorm();
-            DBASE fl = k__;
+            DBASE fl = k_;
             //присваивание и проверка условия (D5)
             q.digits[j] = q_;
             q.len++;
@@ -573,12 +617,12 @@ public:
                 int ln = i + divisor.len;
                 for (; i <= ln; ++i)
                 {
-                    DBASE tmp = DBASE(divident.digits[i]) + DBASE(divisor.digits[l]) + DBASE(k__);
-                    k__ = (BASE) (tmp >> BASE_SIZE);
+                    DBASE tmp = DBASE(divident.digits[i]) + DBASE(divisor.digits[l]) + DBASE(k_);
+                    k_ = (BASE) (tmp >> BASE_SIZE);
                     divident.digits[i] = (BASE) tmp;
                     ++l;
                 }
-                divident.digits[i] = k__;
+                divident.digits[i] = k_;
                 divident.lenNorm();
                 q.digits[j]--;
             }

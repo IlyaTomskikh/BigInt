@@ -59,7 +59,7 @@ int main()
         }
         default: return -666;
     }
-    cout << res << endl << "Time took " << time_duration.count() << endl;
+    cout << "Fast square: " << res << endl << "Time took " << time_duration.count() << endl;
     start = high_resolution_clock::now();
     square = test * test;
     end = high_resolution_clock::now();
@@ -79,7 +79,26 @@ int main()
         }
         default: return -666;
     }
-    cout << res << endl << "Time took " << time_duration.count() << endl;
+    cout << "Slow square: " << res << endl << "Time took " << time_duration.count() << endl;
+
+    cout << "Enter the power" << endl;
+    BigNum power;
+    power.in10();
+    start = high_resolution_clock::now();
+    auto exp = test.fastPow(power);
+    end = high_resolution_clock::now();
+    time_duration = duration_cast<nanoseconds>(end - start);
+    res = exp.out10().str();
+    cout << "Fast power: " << res << ", time took " << time_duration.count() << endl;
+
+    start = high_resolution_clock::now();
+    exp = test.slowPow(power);
+    end = high_resolution_clock::now();
+    time_duration = duration_cast<nanoseconds>(end - start);
+    res = exp.out10().str();
+    cout << "Slow power: " << res << ", time took " << time_duration.count() << endl;
+
+
 
     //calculatori.ru
 
