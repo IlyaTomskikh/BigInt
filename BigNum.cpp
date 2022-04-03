@@ -4,6 +4,7 @@
 #include <random>
 #include <sstream>
 
+///short == 16
 #define BASE_SIZE (sizeof(BASE)*8)
 #define MAX_BASE_VALUE ((DBASE) 1 << BASE_SIZE)
 using namespace std;
@@ -15,8 +16,8 @@ typedef unsigned long long QBASE;
 class BigNum
 {
 private:
-    int len;
     int maxLen;
+    int len;
     BASE *digits;
 public:
 
@@ -30,10 +31,11 @@ public:
         that.maxLen = (s.length() - 1) / (BASE_SIZE / 4) + 1;
         that.digits = new BASE[that.maxLen];
         for (int i = 0; i < that.maxLen; ++i) that.digits[i] = 0;
-        for (char i: s) if (i >= '0' && i <= '9') {
-                that *= 10;
-                that += i - '0';
-            }
+        for (char i: s) if (i >= '0' && i <= '9')
+        {
+            that *= 10;
+            that += i - '0';
+        }
         that.lenNorm();
         return in;
     }
@@ -65,10 +67,11 @@ public:
         maxLen = (str.length() - 1) / (BASE_SIZE / 4) + 1;
         digits = new BASE[maxLen];
         for (auto i = 0; i < maxLen; ++i) digits[i] ^= digits[i];
-        for (auto i : str) if (i == '0' || i == '1') {
-                *this *= 2;
-                *this += i - '0';
-            }
+        for (auto i : str) if (i == '0' || i == '1')
+        {
+            *this *= 2;
+            *this += i - '0';
+        }
         lenNorm();
         return str;
     }
@@ -81,10 +84,11 @@ public:
         maxLen = (s.length() - 1) / (BASE_SIZE / 4) + 1;
         digits = new BASE[maxLen];
         for (int i = 0; i < maxLen; ++i) digits[i] = 0;
-        for (char i: s) if (i >= '0' && i <= '9') {
-                *this *= 10;
-                *this += i - '0';
-            }
+        for (char i: s) if (i >= '0' && i <= '9')
+        {
+            *this *= 10;
+            *this += i - '0';
+        }
         this->lenNorm();
         return s;
     }
@@ -488,27 +492,35 @@ public:
 
     BigNum fastSQ ()
     {
-        auto res = BigNum(2 * len);
         auto x = digits;
-        auto x_square = res.digits;
-        QBASE cuv;
-        ///step 2.2
+        auto y = BigNum(2 * len);
+        auto x_square = y.digits;
+        QBASE cuv, tmp;
+        ///step 2.2:
         for (auto i = 0; i < len; ++i)
         {
+            ///cuv = y_2i + x_i^2:
             cuv = QBASE(x_square[2 * i]) + QBASE(x[i]) * QBASE(x[i]);
+            ///y_2i = u:
             x_square[2 * i] = BASE(cuv);
             for (auto j = i + 1; j < len; ++j)
             {
+                ///cuv = y_(i+j) + 2*x_i*x_j + carry:
                 cuv = QBASE(x_square[i + j]) + QBASE(2) * QBASE(x[i]) * QBASE(x[j]) + (cuv >> BASE_SIZE);
-                x_square[i + j] = BASE(cuv);    ///y_(i + j) = v
+                ///y_(i + j) = v:
+                x_square[i + j] = BASE(cuv);
             }
-            ///step 2.3
-            QBASE tmp = (x_square[i + len + 1] << BASE_SIZE | x_square[i + len]) + QBASE(cuv >> BASE_SIZE);
-            x_square[i + len] = BASE(tmp);  ///y_(i + len) += u
-            x_square[i + len + 1] = BASE(tmp >> BASE_SIZE); ///y_(i + len + 1) += c
+            ///step 2.3:
+            ///computations with carry bits - [y_(i+len+1), y_(i+len)] += [c, u]:
+            tmp = QBASE(x_square[i + len + 1] << BASE_SIZE | x_square[i + len]) + QBASE(cuv >> BASE_SIZE);
+            ///+= has been transformed to = due to the presence of y_(i + len) && y_(i + len + 1) in the variable tmp
+            ///y_(i + len) += u:
+            x_square[i + len] = BASE(tmp);
+            ///y_(i + len + 1) += c:
+            x_square[i + len + 1] = BASE(tmp >> BASE_SIZE);
         }
-        res.lenNorm();
-        return res;
+        y.lenNorm();
+        return y;
     }
 
     QBASE bits()
@@ -659,5 +671,56 @@ public:
     void lenNorm()
     {
         while (len - 1 > 0 && digits[len - 1] == 0) --len;
+    }
+
+    BigNum barretZ(BigNum modulo)
+    {
+        auto z = BigNum(2 * modulo.len + 1);
+        z[2 * modulo.len] = 1;
+        z.len = 2 * modulo.len + 1;
+        z /= modulo;
+        return z;
+    }
+
+    BigNum shiftRight(int k)
+    {
+        auto tmp = (k > len) ? 0 : len - k;
+        BigNum res(tmp);
+        res.len = tmp;
+        for (auto i = 0; i < tmp; ++i) res[i] = digits[i + k];
+        return res;
+    }
+
+    BigNum shiftLeft(int k)
+    {
+        auto tmp = k + len;
+        BigNum res(tmp);
+        res.len = tmp;
+        for (auto i = k; i < tmp; ++i) res[i] = digits[i - k];
+        return res;
+    }
+
+    BigNum barret(BigNum modulo)
+    {
+        if (len > modulo.len * 2) throw "Incorrect modulo";
+        auto z = barretZ(modulo);
+
+        auto temp = shiftRight(modulo.len - 1);
+        temp *= z;
+        temp = temp.shiftRight(modulo.len - 1);
+        auto r1 = *this;
+        if (r1.len > modulo.len) r1.len = modulo.len;
+        auto r2 = temp * modulo;
+        if (r2.len > modulo.len) r2.len = modulo.len;
+        BigNum res(modulo.len + 2);
+        if (r1 >= r2) res = r1 - r2;
+        else
+        {
+            res[modulo.len + 1] = 1;
+            res.len = modulo.len + 2;
+            res += r1 - r2;
+        }
+        while (res >= modulo) res -= modulo;
+        return res;
     }
 };

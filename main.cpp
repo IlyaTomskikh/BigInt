@@ -2,16 +2,6 @@
 #include <iomanip>
 #include "BigNum.cpp"
 
-class PARSE
-{
-public:
-    PARSE(){}
-    string hex_to_bin(const string &hex)
-    {
-        string bits;
-        return bits;
-    }
-};
 
 int main()
 {
@@ -21,7 +11,8 @@ int main()
     using chrono::nanoseconds;
     while (true)
     {
-        auto base = 0;
+        int base;
+        cout << "Enter 'close' to exit the program" << endl;
         cout << "Enter the base" << endl;
         string input;
         cin >> input;
@@ -30,10 +21,6 @@ int main()
         BigNum test;
         cout << "Enter a big integer" << endl;
         switch (base) {
-            case 2: {
-                test.in2();
-                break;
-            }
             case 10: {
                 test.in10();
                 break;
@@ -59,12 +46,6 @@ int main()
                 res = square.out10().str();
                 break;
             }
-            case 2: {
-                res = square.out2().str();
-                break;
-            }
-            default:
-                return -666;
         }
         cout << "Fast square: " << res << endl << "Time took " << time_duration.count() << endl;
         start = high_resolution_clock::now();
@@ -80,12 +61,6 @@ int main()
                 res = square.out10().str();
                 break;
             }
-            case 2: {
-                res = square.out2().str();
-                break;
-            }
-            default:
-                return -666;
         }
         cout << "Slow square: " << res << endl << "Time took " << time_duration.count() << endl;
 
@@ -111,5 +86,5 @@ int main()
 
     //calculatori.ru
 
-    return 1;
+    return 777;
 }
