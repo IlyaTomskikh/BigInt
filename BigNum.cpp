@@ -488,10 +488,11 @@ public:
 
     BigNum fastSQ ()
     {
-        auto res = BigNum(2 * len, true);
+        auto res = BigNum(2 * len);
         auto x = digits;
         auto x_square = res.digits;
         QBASE cuv;
+        ///step 2.2
         for (auto i = 0; i < len; ++i)
         {
             cuv = QBASE(x_square[2 * i]) + QBASE(x[i]) * QBASE(x[i]);
@@ -499,43 +500,50 @@ public:
             for (auto j = i + 1; j < len; ++j)
             {
                 cuv = QBASE(x_square[i + j]) + QBASE(2) * QBASE(x[i]) * QBASE(x[j]) + (cuv >> BASE_SIZE);
-                x_square[i + j] = BASE(cuv);
+                x_square[i + j] = BASE(cuv);    ///y_(i + j) = v
             }
+            ///step 2.3
             QBASE tmp = (x_square[i + len + 1] << BASE_SIZE | x_square[i + len]) + QBASE(cuv >> BASE_SIZE);
-            x_square[i + len + 1] = BASE(tmp >> BASE_SIZE);
-            x_square[i + len] = BASE(tmp);
+            x_square[i + len] = BASE(tmp);  ///y_(i + len) += u
+            x_square[i + len + 1] = BASE(tmp >> BASE_SIZE); ///y_(i + len + 1) += c
         }
         res.lenNorm();
         return res;
     }
 
-    int bits()
+    QBASE bits()
     {
-        for (auto i = (QBASE) len - 1; i >= 0; --i)
+        ///<bit> = [b]
+        ///[0]100 0110 1111
+        ///<bit> = 0 != 1
+        ///0[1]00 0110 1111
+        ///<bit> = 1 == 1 -> return: number_of_units_in_the_digits_array * size_of_unit + position_of(<bit>)
+        for (auto i = len - 1; i >= 0; --i)
             for (auto j = BASE_SIZE - 1; j >= 0; --j)
-                if ((digits[i] >> j) & 1) return i * BASE_SIZE + j + 1;
+                if ((digits[i] >> j) & 1) return (i * BASE_SIZE + j + 1);
         return 0;
     }
 
-    bool getBit(int pos)
+    bool is1(int pos)
     {
         if (pos < 0) throw "NegativeIndexException";
-        auto item = pos / BASE_SIZE;    //to make it faster
-        if (item > 1) throw "IndexOutOfBoundsException";
-        return digits[item] & (1 << (pos % BASE_SIZE));
+        auto unit = pos / BASE_SIZE;    ///to make it faster
+        if (unit > 1) throw "IndexOutOfBoundsException";
+        return digits[unit] & (1 << (pos % BASE_SIZE));
     }
 
     BigNum fastPow(BigNum power)
     {
         BigNum q = BigNum(*this);
         BigNum res(1);
-        res += 1;
+        ///1st multiplication
         if (power[0] & 1) res = BigNum(*this);
+        else res += BASE(1);
         auto powerBits = power.bits();
         for (auto i = 1; i < powerBits; ++i)
         {
             q = q.fastSQ();
-            if (power.getBit(i)) res *= q;
+            if (power.is1(i)) res *= q;
         }
         return res;
     }
@@ -553,7 +561,7 @@ public:
         return res;
     }
 
-    friend pair<BigNum, BigNum> divmod(BigNum &a, BigNum &that)	//a div that && a mod that
+    friend pair<BigNum, BigNum> divmod(BigNum &a, BigNum &that)	///a div that && a mod that
     {
         BigNum divident = a,
                 divisor = that,
