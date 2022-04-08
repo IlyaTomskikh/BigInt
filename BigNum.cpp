@@ -541,7 +541,7 @@ public:
         if (pos < 0) throw "NegativeIndexException";
         auto unit = pos / BASE_SIZE;    ///to make it faster
         if (unit > 1) throw "IndexOutOfBoundsException";
-        return digits[unit] & (1 << (pos % BASE_SIZE));
+        return digits[unit] & 1 << pos % BASE_SIZE;
     }
 
     BigNum fastPow(BigNum power)
@@ -549,7 +549,7 @@ public:
         BigNum q = BigNum(*this);
         BigNum res(1);
         ///1st multiplication
-        if (power[0] & 1) res = BigNum(*this);
+        if (power.digits[0] & 1) res = BigNum(*this);
         else res += BASE(1);
         auto powerBits = power.bits();
         for (auto i = 1; i < powerBits; ++i)
@@ -673,54 +673,59 @@ public:
         while (len - 1 > 0 && digits[len - 1] == 0) --len;
     }
 
-    BigNum barretZ(BigNum modulo)
+    BigNum getBarretZ(BigNum modulo)
     {
         auto z = BigNum(2 * modulo.len + 1);
-        z[2 * modulo.len] = 1;
+        z[2 * modulo.len] = 1;  ///z^2k
         z.len = 2 * modulo.len + 1;
         z /= modulo;
         return z;
     }
 
-    BigNum shiftRight(int k)
+    BigNum barretDIV(int k)
     {
-        auto tmp = (k > len) ? 0 : len - k;
+        if (k > len)
+        {
+            BigNum res(len);
+            res.len = len;
+            return res;
+        }
+        auto tmp = len - k;
         BigNum res(tmp);
         res.len = tmp;
-        for (auto i = 0; i < tmp; ++i) res[i] = digits[i + k];
+        for (auto i = 0; i < tmp; ++i) res.digits[i] = digits[i + k];
         return res;
     }
 
-    BigNum shiftLeft(int k)
+    BigNum barretMOD(int k)
     {
-        auto tmp = k + len;
-        BigNum res(tmp);
-        res.len = tmp;
-        for (auto i = k; i < tmp; ++i) res[i] = digits[i - k];
+        if (k > len) return *this;
+        BigNum res(k);
+        for (auto i = len - 1; i > k; --i) res.digits[i] = digits[i];
         return res;
     }
 
-    BigNum barret(BigNum modulo)
+    BigNum barret(const BigNum& modulo)
     {
         if (len > modulo.len * 2) throw "Incorrect modulo";
-        auto z = barretZ(modulo);
+        auto z = getBarretZ(modulo);
 
-        auto temp = shiftRight(modulo.len - 1);
-        temp *= z;
-        temp = temp.shiftRight(modulo.len - 1);
-        auto r1 = *this;
-        if (r1.len > modulo.len) r1.len = modulo.len;
-        auto r2 = temp * modulo;
-        if (r2.len > modulo.len) r2.len = modulo.len;
-        BigNum res(modulo.len + 2);
-        if (r1 >= r2) res = r1 - r2;
+        auto q = barretDIV(modulo.len - 1) * z;
+        q = q.barretDIV(modulo.len + 1);
+
+        auto r1 = barretMOD(modulo.len + 1);
+        auto r2 = (q * modulo).barretMOD(modulo.len + 1);
+
+        BigNum r;
+        if (r1 >= r2) r = r1 - r2;
         else
         {
-            res[modulo.len + 1] = 1;
-            res.len = modulo.len + 2;
-            res += r1 - r2;
+            r = BigNum(modulo.len + 2);
+            r.digits[modulo.len + 1] = 1;
+            r.len = modulo.len + 2;
+            r += r1 - r2;
         }
-        while (res >= modulo) res -= modulo;
-        return res;
+        while (r >= modulo) r -= modulo;
+        return r;
     }
 };

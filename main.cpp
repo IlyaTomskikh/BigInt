@@ -80,9 +80,13 @@ int main()
         time_duration = duration_cast<nanoseconds>(end - start);
         res = exp.out10().str();
         cout << "Slow power: " << res << ", time took " << time_duration.count() << endl;
+
+        cout << "Enter modulo" << endl;
+        BigNum modulo;
+        modulo.in10();
+        res = test.barret(modulo).to_string();
+        cout << test.to_string() << " mod " << modulo.to_string() << " = " << res << endl;
     }
-
-
 
     //calculatori.ru
 
