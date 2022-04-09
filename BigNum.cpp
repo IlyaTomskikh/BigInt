@@ -496,13 +496,14 @@ public:
         auto y = BigNum(2 * len);
         auto x_square = y.digits;
         QBASE cuv, tmp;
-        ///step 2.2:
+        ///step 2.1:
         for (auto i = 0; i < len; ++i)
         {
             ///cuv = y_2i + x_i^2:
             cuv = QBASE(x_square[2 * i]) + QBASE(x[i]) * QBASE(x[i]);
             ///y_2i = u:
             x_square[2 * i] = BASE(cuv);
+            ///step 2.2:
             for (auto j = i + 1; j < len; ++j)
             {
                 ///cuv = y_(i+j) + 2*x_i*x_j + carry:
@@ -544,18 +545,20 @@ public:
         return digits[unit] & 1 << pos % BASE_SIZE;
     }
 
+    ///<-
     BigNum fastPow(BigNum power)
     {
         BigNum q = BigNum(*this);
         BigNum res(1);
-        ///1st multiplication
-        if (power.digits[0] & 1) res = BigNum(*this);
+        ///step 1:
+        if (power.is1(0)) res = *this;
         else res += BASE(1);
         auto powerBits = power.bits();
+        ///step 2:
         for (auto i = 1; i < powerBits; ++i)
         {
-            q = q.fastSQ();
-            if (power.is1(i)) res *= q;
+            q = q.fastSQ();                    ///2.1
+            if (power.is1(i)) res *= q;    ///2.2
         }
         return res;
     }
@@ -676,12 +679,13 @@ public:
     BigNum getBarretZ(BigNum modulo)
     {
         auto z = BigNum(2 * modulo.len + 1);
-        z[2 * modulo.len] = 1;  ///z^2k
+        z.digits[2 * modulo.len] = 1;  ///z^2k
         z.len = 2 * modulo.len + 1;
         z /= modulo;
         return z;
     }
 
+    ///*this / base^k
     BigNum barretDIV(int k)
     {
         if (k > len)
@@ -697,30 +701,34 @@ public:
         return res;
     }
 
+    ///*this mod base^k
     BigNum barretMOD(int k)
     {
         if (k > len) return *this;
         BigNum res(k);
-        for (auto i = len - 1; i > k; --i) res.digits[i] = digits[i];
+        res.len = k;
+        for (auto i = 0; i < k; ++i) res.digits[i] = digits[i];
         return res;
     }
 
     BigNum barret(const BigNum& modulo)
     {
-        if (len > modulo.len * 2) throw "Incorrect modulo";
+        if (len > modulo.len * 2) return *this;
+        ///z = [b^2k / m]
         auto z = getBarretZ(modulo);
 
-        auto q = barretDIV(modulo.len - 1) * z;
-        q = q.barretDIV(modulo.len + 1);
+        ///q' = [([x / b^k-1] * z] / b^k+1]
+        auto q = (barretDIV(modulo.len - 1) * z).barretDIV(modulo.len + 1);
 
+        ///r1 = x mod b^k+1
         auto r1 = barretMOD(modulo.len + 1);
+        ///r2 = q' * m mod b^k+1
         auto r2 = (q * modulo).barretMOD(modulo.len + 1);
 
-        BigNum r;
+        BigNum r(modulo.len + 2);
         if (r1 >= r2) r = r1 - r2;
         else
         {
-            r = BigNum(modulo.len + 2);
             r.digits[modulo.len + 1] = 1;
             r.len = modulo.len + 2;
             r += r1 - r2;
