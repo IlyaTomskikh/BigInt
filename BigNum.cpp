@@ -31,7 +31,7 @@ public:
         that.maxLen = (s.length() - 1) / (BASE_SIZE / 4) + 1;
         that.digits = new BASE[that.maxLen];
         for (int i = 0; i < that.maxLen; ++i) that.digits[i] = 0;
-        for (char i: s) if (i >= '0' && i <= '9')
+        for (char i: s) if (i >= '0' and i <= '9')
         {
             that *= 10;
             that += i - '0';
@@ -41,11 +41,11 @@ public:
     }
     friend ostream & operator<< (ostream &out, BigNum &that)
     {
-        if (!(that.digits[0] == 0 && that.len == 1))
+        if (!(that.digits[0] == 0 and that.len == 1))
         {
             string s;
             BigNum tmp(that);
-            while (tmp.digits[0] != 0 || tmp.len > 1)
+            while (tmp.digits[0] != 0 or tmp.len > 1)
             {
                 char _ch = tmp % 10 + '0';
                 s.push_back(_ch);
@@ -58,23 +58,6 @@ public:
         return out;
     }
 
-    string in2()
-    {
-        string str;
-        cin >> str;
-        delete[] digits;
-        len = 1;
-        maxLen = (str.length() - 1) / (BASE_SIZE / 4) + 1;
-        digits = new BASE[maxLen];
-        for (auto i = 0; i < maxLen; ++i) digits[i] ^= digits[i];
-        for (auto i : str) if (i == '0' || i == '1')
-        {
-            *this *= 2;
-            *this += i - '0';
-        }
-        lenNorm();
-        return str;
-    }
     string in10()
     {
         string s;
@@ -84,99 +67,13 @@ public:
         maxLen = (s.length() - 1) / (BASE_SIZE / 4) + 1;
         digits = new BASE[maxLen];
         for (int i = 0; i < maxLen; ++i) digits[i] = 0;
-        for (char i: s) if (i >= '0' && i <= '9')
+        for (char i: s) if (i >= '0' and i <= '9')
         {
             *this *= 10;
             *this += i - '0';
         }
         this->lenNorm();
         return s;
-    }
-    string in16()
-    {
-        string str;
-        cin >> str;
-        delete[] digits;
-        len = (str.length() - 1) / (BASE_SIZE / 4) + 1;
-        digits = new BASE[len];
-        for (int i = len; i--;) digits[i] = 0;
-        int j = 0, k = 0;
-        BASE tmp;
-        for (int i = str.length(); i--;)
-        {
-            if (str[i] <= '9' && str[i] >= '0') tmp = str[i] - '0';
-            else
-            {
-                if (str[i] <= 'f' && str[i] >= 'a') tmp = str[i] - 'a' + 10;
-                else
-                {
-                    if (str[i] <= 'F' && str[i] >= 'A') tmp = str[i] - 'A' + 10;
-                    else break;
-                }
-            }
-            digits[j] |= tmp << (k * 4);
-            ++k;
-            if (k >= BASE_SIZE / 4)
-            {
-                k = 0;
-                ++j;
-            }
-        }
-        lenNorm();
-        return str;
-    }
-    stringstream out16()
-    {
-        stringstream ss;
-        if (digits)
-        {
-            for (auto i = len; i--;)
-            {
-                ss.width(BASE_SIZE / 4);
-                ss.fill('0');
-                ss << hex << (int) digits[i] << dec;
-            }
-        }
-        else ss << ' ';
-        return ss;
-    }
-    stringstream out10()
-    {
-        stringstream out;
-        if (!(digits[0] == 0 && len == 1))
-        {
-            string s;
-            BigNum tmp(*this);
-            while (tmp.digits[0] != 0 || tmp.len > 1)
-            {
-                char _ch = tmp % 10 + '0';
-                s.push_back(_ch);
-                tmp /= 10;
-            }
-            reverse(s.begin(), s.end());
-            out << s;
-        }
-        else out << 0;
-        return out;
-    }
-    stringstream out2()
-    {
-        stringstream out;
-        if (!(digits[0] == 0 && len == 1))
-        {
-            string s;
-            BigNum tmp(*this);
-            while (tmp.digits[0] != 0 || tmp.len > 1)
-            {
-                char _ch = tmp % 2 + '0';
-                s.push_back(_ch);
-                tmp /= 2;
-            }
-            reverse(s.begin(), s.end());
-            out << s;
-        }
-        else out << 0;
-        return out;
     }
 
     BigNum(string &str)
@@ -193,12 +90,7 @@ public:
         if (flag) for(int i = 0; i < len; ++i) digits[i] = 0;
         else
         {
-            for(int i = 0; i < len; ++i)
-            {
-                default_random_engine rng(time(0));
-                uniform_int_distribution<int> rng_dist(0, 255);
-                digits[i] = static_cast<BASE>(rng_dist(rng));
-            }
+            for (int i = 0; i < len; ++i) digits[i] = rand() % BASE_SIZE;
             lenNorm();
         }
     }
@@ -278,7 +170,7 @@ public:
     {
         BigNum sum(max(len, that.len) + 1);
         int nm = min(len, that.len), j = 0, k = 0;
-        DBASE tmp = 0;
+        DBASE tmp;
         while (j < nm)
         {
             tmp = DBASE(digits[j]) + DBASE(that.digits[j]) + DBASE(k);
@@ -318,7 +210,7 @@ public:
         DBASE tmp = DBASE(digits[0]) + DBASE(num) + DBASE(k);
         k = (BASE)(tmp >> BASE_SIZE);
         result.digits[0] = (BASE)tmp;
-        for (int i = 1; i < len; i++)
+        for (int i = 1; i < len; ++i)
         {
             tmp = DBASE(digits[i]) + DBASE(k);
             k = (BASE)(tmp >> BASE_SIZE);
@@ -375,7 +267,7 @@ public:
     {
         BigNum mul(len + 1);
         mul.len = len + 1;
-        DBASE tmp = 0;
+        DBASE tmp;
         BASE k = 0;
         for (int j = 0; j < len; ++j)
         {
@@ -456,11 +348,7 @@ public:
             BigNum res = *this / that.digits[0];
             return res;
         }
-        if (that.digits[that.len - 1] == 0 || that.len < 1 || *this < that)
-        {
-            cout << "that.digits[that.len - 1] == 0 || that.len < 1 || *this < that" << endl;
-            return *this;
-        }
+        if (that.digits[that.len - 1] == 0 or that.len < 1 or *this < that) return *this;
         return divmod(*this, that).first;
     }
     BigNum operator/= (BigNum &that)
@@ -477,11 +365,7 @@ public:
             r.digits[0] = *this % that.digits[0];
             return r;
         }
-        if (that.digits[that.len - 1] == 0 || that.len < 1 || *this < that)
-        {
-            cout << "that.digits[that.len - 1] == 0 || that.len < 1 || *this < that" << endl;
-            return *this;
-        }
+        if (that.digits[that.len - 1] == 0 or that.len < 1 or *this < that) return *this;
         return divmod(*this, that).second;
     }
     BigNum operator%= (BigNum &that)
@@ -514,7 +398,7 @@ public:
             ///step 2.3:
             ///computations with carry bits - [y_(i+len+1), y_(i+len)] += [c, u]:
             tmp = QBASE(x_square[i + len + 1] << BASE_SIZE | x_square[i + len]) + QBASE(cuv >> BASE_SIZE);
-            ///+= has been transformed to = due to the presence of y_(i + len) && y_(i + len + 1) in the variable tmp
+            ///+= has been transformed to = due to the presence of y_(i + len) and y_(i + len + 1) in the variable tmp
             ///y_(i + len) += u:
             x_square[i + len] = BASE(tmp);
             ///y_(i + len + 1) += c:
@@ -563,6 +447,25 @@ public:
         return res;
     }
 
+    BigNum fastPowBarret(BigNum power, BigNum mod)
+    {
+        BigNum q = BigNum(*this);
+        BigNum res(1);
+        ///step 1:
+        if (power.is1(0)) res = *this;
+        else res += BASE(1);
+        auto powerBits = power.bits();
+        ///step 2:
+        for (auto i = 1; i < powerBits; ++i)
+        {
+            q = q.fastSQ();                    ///2.1
+            q.barret(mod);
+            if (power.is1(i)) res *= q;    ///2.2
+            res.barret(mod);
+        }
+        return res;
+    }
+
     BigNum slowPow(const BigNum& power) const
     {
         BigNum iter(1);
@@ -576,7 +479,7 @@ public:
         return res;
     }
 
-    friend pair<BigNum, BigNum> divmod(BigNum &a, BigNum &that)	///a div that && a mod that
+    friend pair<BigNum, BigNum> divmod(BigNum &a, BigNum &that)	///a div that and a mod that
     {
         BigNum divident = a,
                 divisor = that,
@@ -607,11 +510,11 @@ public:
             //вычисление q^ и r^, проверка сложного условия (D3)
             q_ = (((DBASE(divident.digits[j + k]) << BASE_SIZE)) + divident.digits[j + k - 1]) / divisor.digits[k - 1];
             r_ = (((DBASE(divident.digits[j + k]) << BASE_SIZE)) + divident.digits[j + k - 1]) % divisor.digits[k - 1];
-            if ((q_ == b) || ((q_ * divisor.digits[k - 2]) > (b * r_ + divident.digits[j + k - 2])))
+            if ((q_ == b) or ((q_ * divisor.digits[k - 2]) > (b * r_ + divident.digits[j + k - 2])))
             {
                 --q_;
                 r_ = r_ + divisor.digits[k - 1];
-                if ((r_ < b) && ((q_ == b) || (q_ * divisor.digits[k - 2] > b * r_ + divident.digits[j + k - 2]))) --q_;
+                if ((r_ < b) and ((q_ == b) or (q_ * divisor.digits[k - 2] > b * r_ + divident.digits[j + k - 2]))) --q_;
             }
             int dl = divisor.len;
             BigNum tmpDivisor = divisor * q_;
@@ -661,7 +564,7 @@ public:
     {
         string s;
         BigNum tmp(*this);
-        while (tmp.digits[0] != 0 || tmp.len > 1)
+        while (tmp.digits[0] != 0 or tmp.len > 1)
         {
             char _ch = tmp % 10 + '0';
             s.push_back(_ch);
@@ -673,10 +576,10 @@ public:
 
     void lenNorm()
     {
-        while (len - 1 > 0 && digits[len - 1] == 0) --len;
+        while (len - 1 > 0 and digits[len - 1] == 0) --len;
     }
 
-    BigNum getBarretZ(BigNum modulo)
+    static BigNum getBarretZ(BigNum modulo)
     {
         auto z = BigNum(2 * modulo.len + 1);
         z.digits[2 * modulo.len] = 1;  ///z^2k
@@ -736,4 +639,97 @@ public:
         while (r >= modulo) r -= modulo;
         return r;
     }
+
+    bool testFermat()
+    {
+        BigNum zero(true);
+        BigNum one = zero + BASE(1);
+        BigNum four = one * BASE(4);
+        for (auto t = 0; t < 100; ++t)
+        {
+            auto size = rand() % len;
+            if (!size) ++size;
+            BigNum a(size, false);
+            while (a >= *this - four or a == zero) a = BigNum(size, false);
+            a += BASE(2);
+            auto r = a.fastPowBarret(*this - one, *this) % *this;
+            if (r != one) return false;
+            cout << t << " tests have been proceed" << endl;
+        }
+        return true;
+    }
+
+    BigNum jacobi(BigNum n)
+    {
+        BigNum zero(len);
+        auto one = zero + BASE(1);
+        if (*this == zero) return zero;
+        if (*this == one) return one;
+        BigNum powerOf2(one);
+        BigNum a1;
+        auto k = 0;
+        while (true)
+        {
+            powerOf2 *= BASE(2);
+            ++k;
+            a1 = *this / powerOf2;
+            if (powerOf2 * a1 == *this and a1 % BASE(2) != BASE(0)) break;
+            if (powerOf2 > *this)
+            {
+                k ^= k;
+                break;
+            }
+        }
+        auto s = k % 2 == 0 ? 1 : n % 8 == 1 or n % 8 == 7 ? 1 : -1;
+        if (n % 4 == 3 and a1 % 4 == 3) s = -s;
+        return a1 == one ? (one * s) : (*this % a1).jacobi(a1) * s;
+    }
+
+    bool testSolovayStrassen()
+    {
+        BigNum zero(true);
+        BigNum one = zero + BASE(1);
+        BigNum four = one * BASE(4);
+        for (auto i = 0; i < 100; ++i)
+        {
+            auto size = rand() % len;
+            if (!size) ++size;
+            BigNum a(size, false);
+            while (a >= *this - four or a == zero) a = BigNum(size, false);
+            a += BASE(2);
+            auto r = a.fastPowBarret((*this - one) / BASE(2), *this) % *this;
+            if (r != one) return false;
+            auto s = a.jacobi(*this);
+            if (r != s) return false;
+        }
+        return true;
+    }
+
+
+    bool isPrime()
+    {
+        return testSolovayStrassen();
+    }
+
+//
+//    static BigNum generatePrime(int primeLen) {
+//        //TODO: algorithm
+//        return truePrime;
+//    }
+//
+//    static BigNum strongPrimeGeneratorGordon(int l)
+//    {
+//        auto size = rand() % l;
+//        auto s = generatePrime(size);
+//        auto t = generatePrime(size);
+//        BigNum i(t.len - 1, false);
+//        BigNum r(1, true);
+//        for (; !r.testFerma(); i += BASE(1)) r = i * t * BASE(2) + 1;
+//        auto two = BigNum(1, true) + BASE(2);
+//        auto p = s.fastPowBarret(r - two, r);
+//        BigNum j(s.len - 1, false);
+//        for (; !p.testFerma(); j += BASE(1)) p += j * r * BASE(2);
+//        return p;
+//    }
+
 };
