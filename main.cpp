@@ -1,12 +1,8 @@
-#include <chrono>
 #include <iomanip>
+#include <future>
+#include <thread>
 #include "BigNum.cpp"
 
-int currentTimeMicrosec(){
-    chrono::time_point<chrono::system_clock, chrono::microseconds> tp = chrono::time_point_cast<chrono::microseconds>(chrono::high_resolution_clock::now());
-    auto tmp = chrono::duration_cast<chrono::microseconds>(tp.time_since_epoch());
-    return tmp.count();
-}
 
 int main()
 {
@@ -15,52 +11,88 @@ int main()
 //    using chrono::duration;
 //    using chrono::nanoseconds;
     auto ix = 0;
-    srand(currentTimeMicrosec() + rand());
+    srand(BigNum::currentTimeMicrosec() + rand());
     while (ix < 2)
     {
         ++ix;
-        BigNum test;
-        cout << "Enter the number in the base 10" << endl;
-        test.in10();
-        auto isPrime = test.isPrime();
-        if (isPrime) cout << test.to_string() << " is a prime number" << endl;
-        else cout << test.to_string() << " is not a prime number" << endl;
-//        auto start = high_resolution_clock::now();
-//        auto square = test.fastSQ();
-//        auto end = high_resolution_clock::now();
-//        auto time_duration = duration_cast<nanoseconds>(end - start);
-//        string res;
-//        res = square.out10().str();
-//        cout << "Fast square: " << res << endl << "Time took " << time_duration.count() << endl;
-//        start = high_resolution_clock::now();
-//        square = test * test;
-//        end = high_resolution_clock::now();
-//        time_duration = duration_cast<nanoseconds>(end - start);
-//        res = square.out10().str();
-//        cout << "Slow square: " << res << endl << "Time took " << time_duration.count() << endl;
+//        BigNum test;
+//        cout << "Enter the number in the base 10" << endl;
+//        test.in10();
 //
-//        cout << "Enter the power" << endl;
-//        BigNum power;
-//        power.in10();
-//        start = high_resolution_clock::now();
-//        auto exp = test.fastPow(power);
-//        end = high_resolution_clock::now();
-//        time_duration = duration_cast<nanoseconds>(end - start);
-//        res = exp.out10().str();
-//        cout << "Fast power: " << res << ", time took " << time_duration.count() << endl;
-//
-//        start = high_resolution_clock::now();
-//        exp = test.slowPow(power);
-//        end = high_resolution_clock::now();
-//        time_duration = duration_cast<nanoseconds>(end - start);
-//        res = exp.out10().str();
-//        cout << "Slow power: " << res << ", time took " << time_duration.count() << endl;
+//        cout << test << (test.isPrime() == 1 ? " is a prime number" : " is not a prime number") << endl;
 
-//        cout << "Enter the modulo" << endl;
-//        BigNum modulo;
-//        modulo.in10();
-//        //res = test.barret(modulo).to_string();
-//        cout << test.to_string() << " mod " << modulo.to_string() << " = " << test.barret(modulo).to_string() << endl;
+//        cout << "Comparison: Fermat's result = " << test.testFermat() << ", Miller-Rabin's result = " << test.testMillerRabin() << endl;
+
+//        cout << "Probabilities:\nFermat's test = " << test.getProbabilityOf("fermat") << "Miller-Rabin's test = " << test.getProbabilityOf("miller-rabin") << endl;
+        int bnlen = 20;
+        BigNum *ptr1 = nullptr;
+        auto result1 = std::thread(BigNum::call, bnlen, &ptr1);
+
+        BigNum *ptr2 = nullptr;
+        auto result2 = std::thread(BigNum::call, bnlen, &ptr2);
+
+        BigNum *ptr3 = nullptr;
+        auto result3 = std::thread(BigNum::call, bnlen, &ptr3);
+
+        BigNum *ptr4 = nullptr;
+        auto result4 = std::thread(BigNum::call, bnlen, &ptr4);
+
+        BigNum *ptr5 = nullptr;
+        auto result5 = std::thread(BigNum::call, bnlen, &ptr5);
+
+        BigNum *ptr6 = nullptr;
+        auto result6 = std::thread(BigNum::call, bnlen, &ptr6);
+
+        result1.detach();
+        result2.detach();
+        result3.detach();
+        result4.detach();
+        result5.detach();
+        result6.detach();
+
+        while (true)
+        {
+            this_thread::sleep_for(chrono::milliseconds(500));
+            if (ptr1)
+            {
+                cout << "that = " << *ptr1 << endl;
+                break;
+            }
+            if (ptr2)
+            {
+                cout << "that = " << *ptr2 << endl;
+                break;
+            }
+            if (ptr3)
+            {
+                cout << "that = " << *ptr3 << endl;
+                break;
+            }
+            if (ptr4)
+            {
+                cout << "that = " << *ptr4 << endl;
+                break;
+            }
+            if (ptr5)
+            {
+                cout << "that = " << *ptr5 << endl;
+                break;
+            }
+            if (ptr6)
+            {
+                cout << "that = " << *ptr6 << endl;
+                break;
+            }
+
+        }
+
+        cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
+
+//        cout << "Enter the prime number len" << endl;
+//        int l;
+//        cin >> l;
+//        auto sp = BigNum::strongPrimeGeneratorGordon(l);
+//        cout << "Strong Prime = " << sp << endl;
     }
 
     //calculatori.ru

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <random>
 #include <sstream>
+#include <chrono>
 
 ///short == 16
 #define BASE_SIZE (sizeof(BASE)*8)
@@ -11,6 +12,10 @@ using namespace std;
 typedef unsigned short BASE;
 typedef unsigned int DBASE;
 typedef unsigned long long QBASE;
+
+
+
+
 
 
 class BigNum
@@ -86,6 +91,11 @@ public:
 
     BigNum(int l = 1, bool flag = true): len(l), maxLen(l)
     {
+        if (l == 0)
+        {
+            ++len;
+            ++maxLen;
+        }
         digits = new BASE[len];
         if (flag) for(int i = 0; i < len; ++i) digits[i] = 0;
         else
@@ -421,11 +431,122 @@ public:
         return 0;
     }
 
-    bool is1(int pos)
+    QBASE bitsTrue()
     {
-        if (pos < 0) throw "NegativeIndexException";
+        if(BASE_SIZE != 16) {
+            cerr << "BASE_SIZE != 16 is not supported" << endl;
+            throw "BASE_SIZE != 16 is not supported\n";
+        }
+        if(len == 0) return 0;
+
+        // returns bit length of most left array element
+
+        auto l = 0;
+        BASE b = digits[len - 1];
+        // BASE_SIZE = 16 (short)
+        if((b>>8) > 0) {
+            l += 8;
+            b >>= 8;
+            if((b>>4) > 0) {
+                l += 4;
+                b >>= 4;
+                if((b>>2) > 0) {
+                    l += 2;
+                    b >>= 2;
+                    if((b>>1) > 0) {
+                        l += 1;
+                        b >>= 1;
+                    } else {
+                        b &= ~((BASE)(-1)<<1);
+                    }
+                } else {
+                    b &= ~((BASE)(-1)<<2);
+                    if((b>>1) > 0) {
+                        l += 1;
+                        b >>= 1;
+                    } else {
+                        b &= ~((BASE)(-1)<<1);
+                    }
+                }
+            } else {
+                b &= ~((BASE)(-1)<<4);
+                if((b>>2) > 0) {
+                    l += 2;
+                    b >>= 2;
+                    if((b>>1) > 0) {
+                        l += 1;
+                        b >>= 1;
+                    } else {
+                        b &= ~((BASE)(-1)<<1);
+                    }
+                } else {
+                    b &= ~((BASE)(-1)<<2);
+                    if((b>>1) > 0) {
+                        l += 1;
+                        b >>= 1;
+                    } else {
+                        b &= ~((BASE)(-1)<<1);
+                    }
+                }
+            }
+        } else {
+            b &= ~((BASE)(-1)<<8);
+            if((b>>4) > 0) {
+                l += 4;
+                b >>= 4;
+                if((b>>2) > 0) {
+                    l += 2;
+                    b >>= 2;
+                    if((b>>1) > 0) {
+                        l += 1;
+                        b >>= 1;
+                    } else {
+                        b &= ~((BASE)(-1)<<1);
+                    }
+                } else {
+                    b &= ~((BASE)(-1)<<2);
+                    if((b>>1) > 0) {
+                        l += 1;
+                        b >>= 1;
+                    } else {
+                        b &= ~((BASE)(-1)<<1);
+                    }
+                }
+            } else {
+                b &= ~((BASE)(-1)<<4);
+                if((b>>2) > 0) {
+                    l += 2;
+                    b >>= 2;
+                    if((b>>1) > 0) {
+                        l += 1;
+                        b >>= 1;
+                    } else {
+                        b &= ~((BASE)(-1)<<1);
+                    }
+                } else {
+                    b &= ~((BASE)(-1)<<2);
+                    if((b>>1) > 0) {
+                        l += 1;
+                        b >>= 1;
+                    } else {
+                        b &= ~((BASE)(-1)<<1);
+                    }
+                }
+            }
+        }
+
+        if(b) l += 1;
+
+        l += (len - 1)*BASE_SIZE;
+
+        return l;
+    }
+
+    bool is1(QBASE pos)
+    {
+        if (pos < 0) cerr << "NegativeIndexException" << endl;
         auto unit = pos / BASE_SIZE;    ///to make it faster
-        if (unit > 1) throw "IndexOutOfBoundsException";
+        if (unit >= len) cerr << "IndexOutOfBoundsException" << endl;
         return digits[unit] & 1 << pos % BASE_SIZE;
     }
 
@@ -434,6 +555,7 @@ public:
     {
         BigNum q = BigNum(*this);
         BigNum res(1);
+        if (power == res + BASE(1)) return *this;
         ///step 1:
         if (power.is1(0)) res = *this;
         else res += BASE(1);
@@ -443,25 +565,6 @@ public:
         {
             q = q.fastSQ();                    ///2.1
             if (power.is1(i)) res *= q;    ///2.2
-        }
-        return res;
-    }
-
-    BigNum fastPowBarret(BigNum power, BigNum mod)
-    {
-        BigNum q = BigNum(*this);
-        BigNum res(1);
-        ///step 1:
-        if (power.is1(0)) res = *this;
-        else res += BASE(1);
-        auto powerBits = power.bits();
-        ///step 2:
-        for (auto i = 1; i < powerBits; ++i)
-        {
-            q = q.fastSQ();                    ///2.1
-            q.barret(mod);
-            if (power.is1(i)) res *= q;    ///2.2
-            res.barret(mod);
         }
         return res;
     }
@@ -504,7 +607,7 @@ public:
             divident.digits[divident.len - 1] = 0;
         }
         //начальная установка индекса (D2)
-        int j = a.len - that.len, k = divisor.len;
+        auto j = a.len - that.len, k = divisor.len;
         for(; j >= 0; --j)	//шаг цикла (D7)
         {
             //вычисление q^ и r^, проверка сложного условия (D3)
@@ -516,10 +619,10 @@ public:
                 r_ = r_ + divisor.digits[k - 1];
                 if ((r_ < b) and ((q_ == b) or (q_ * divisor.digits[k - 2] > b * r_ + divident.digits[j + k - 2]))) --q_;
             }
-            int dl = divisor.len;
-            BigNum tmpDivisor = divisor * q_;
+            auto dl = divisor.len;
+            auto tmpDivisor = divisor * q_;
             //умножить-вычесть (D4)
-            DBASE tmp = 0, k_ = 0;
+            auto tmp = 0, k_ = 0;
             int ix = j, jx = dl, i = ix, l = 0;
             while (i <= ix + jx)
             {
@@ -531,7 +634,7 @@ public:
                 ++l;
             }
             divident.lenNorm();
-            DBASE fl = k_;
+            auto fl = k_;
             //присваивание и проверка условия (D5)
             q.digits[j] = q_;
             q.len++;
@@ -543,7 +646,7 @@ public:
                 int ln = i + divisor.len;
                 for (; i <= ln; ++i)
                 {
-                    DBASE tmp = DBASE(divident.digits[i]) + DBASE(divisor.digits[l]) + DBASE(k_);
+                    auto tmp = DBASE(divident.digits[i]) + DBASE(divisor.digits[l]) + DBASE(k_);
                     k_ = (BASE) (tmp >> BASE_SIZE);
                     divident.digits[i] = (BASE) tmp;
                     ++l;
@@ -555,7 +658,7 @@ public:
         }
         divident.len = divisor.len;
         divident.maxLen = divisor.maxLen;
-        BigNum r = divident / d;	//D8 - денормализация для модуля
+        auto r = divident / d;	//D8 - денормализация для модуля
         q.lenNorm();
         return make_pair(q, r);
     }
@@ -593,12 +696,12 @@ public:
     {
         if (k > len)
         {
-            BigNum res(len);
+            BigNum res(len, true);
             res.len = len;
             return res;
         }
         auto tmp = len - k;
-        BigNum res(tmp);
+        BigNum res(tmp, true);
         res.len = tmp;
         for (auto i = 0; i < tmp; ++i) res.digits[i] = digits[i + k];
         return res;
@@ -608,7 +711,7 @@ public:
     BigNum barretMOD(int k)
     {
         if (k > len) return *this;
-        BigNum res(k);
+        BigNum res(k, true);
         res.len = k;
         for (auto i = 0; i < k; ++i) res.digits[i] = digits[i];
         return res;
@@ -634,18 +737,101 @@ public:
         {
             r.digits[modulo.len + 1] = 1;
             r.len = modulo.len + 2;
-            r += r1 - r2;
+            r += r2 - r1;
         }
         while (r >= modulo) r -= modulo;
         return r;
     }
 
+
+    BigNum fastPowBarret(BigNum power, BigNum mod)
+    {
+        BigNum q = BigNum(*this);
+        q %= mod;
+        BigNum res(1);
+        if (power.is1(0)) res = *this;
+        else res += BASE(1);
+        auto powerBits = power.bits();
+        for (auto i = 1; i < powerBits; ++i)
+        {
+            q = q.fastSQ();
+            q = q.barret(mod);
+//            q %= mod;
+            if (power.is1(i)) res *= q;
+            res = res.barret(mod);
+//            res %= mod;
+        }
+        return res;
+    }
+
+    ///z = [b^2k / m]
+    BigNum barretWithZ(const BigNum& modulo, const BigNum z)
+    {
+        if (len > modulo.len * 2) return *this;
+
+        ///q' = [([x / b^k-1] * z] / b^k+1]
+        auto q = (barretDIV(modulo.len - 1) * z).barretDIV(modulo.len + 1);
+
+        ///r1 = x mod b^k+1
+        auto r1 = barretMOD(modulo.len + 1);
+        ///r2 = q' * m mod b^k+1
+        auto r2 = (q * modulo).barretMOD(modulo.len + 1);
+
+        BigNum r(modulo.len + 2, true);
+        if (r1 >= r2) r = r1 - r2;
+        else {
+            r.digits[modulo.len + 1] = 1;
+            r.len = modulo.len + 2;
+            r += r1;
+            r -= r2;
+        }
+        while (r >= modulo) r -= modulo;
+        return r;
+    }
+
+
+    BigNum fastPowBarretZ(BigNum power, BigNum mod, BigNum z)
+    {
+        BigNum q = BigNum(*this);
+        q %= mod;
+        BigNum res(1, true);
+        if (power.is1(0)) res = *this;
+        else res += BASE(1);
+        auto powerBits = power.bits();
+//        auto fpz = 0;
+        for (auto i = 1; i < powerBits; ++i)
+        {
+            q = q.fastSQ();
+            if (q >= mod) q = q.barretWithZ(mod, z);
+            if (power.is1(i)) res *= q;
+            if(res >= mod) res = res.barretWithZ(mod, z);
+        }
+        return res;
+    }
+
+    BigNum coolFastPowBarretZ(BigNum power, BigNum mod, const BigNum& z)
+    {
+        BigNum q = BigNum(*this);
+        q %= mod;
+        auto powerBits = power.bits();
+//        auto fpz = 0;
+        for (auto i = powerBits - 1; i--;)
+        {
+            q = q.fastSQ();
+            if (q >= mod) q = q.barretWithZ(mod, z);
+            if (power.is1(i)) q *= *this;
+            if(q >= mod) q = q.barretWithZ(mod, z);
+        }
+        return q;
+    }
+
     bool testFermat()
     {
-        BigNum zero(true);
-        BigNum one = zero + BASE(1);
-        BigNum four = one * BASE(4);
-        for (auto t = 0; t < 100; ++t)
+        if (*this % BASE(2) == BASE(0)) return false;
+        BigNum zero(1, true);
+        auto one = zero + BASE(1);
+        auto four = one * BASE(4);
+        for (auto t = 1; t < 101; ++t)
         {
             auto size = rand() % len;
             if (!size) ++size;
@@ -654,82 +840,154 @@ public:
             a += BASE(2);
             auto r = a.fastPowBarret(*this - one, *this) % *this;
             if (r != one) return false;
-            cout << t << " tests have been proceed" << endl;
+//            cout << "round number " << t << " has been proceed" << endl;
         }
         return true;
     }
 
-    BigNum jacobi(BigNum n)
+    bool testMillerRabin()
     {
-        BigNum zero(len);
+        if (*this % BASE(2) == BASE(0)) return false;
+        BigNum zero(1, true);
+        //BigNum s(1, true);
+        QBASE s = 0;
         auto one = zero + BASE(1);
-        if (*this == zero) return zero;
-        if (*this == one) return one;
-        BigNum powerOf2(one);
-        BigNum a1;
-        auto k = 0;
-        while (true)
+//        BigNum twoPow(one);
+        auto two = zero + BASE(2);
+        BigNum nMinus1(*this - one);
+        BigNum r(nMinus1);
+        do
         {
-            powerOf2 *= BASE(2);
-            ++k;
-            a1 = *this / powerOf2;
-            if (powerOf2 * a1 == *this and a1 % BASE(2) != BASE(0)) break;
-            if (powerOf2 > *this)
-            {
-                k ^= k;
-                break;
-            }
-        }
-        auto s = k % 2 == 0 ? 1 : n % 8 == 1 or n % 8 == 7 ? 1 : -1;
-        if (n % 4 == 3 and a1 % 4 == 3) s = -s;
-        return a1 == one ? (one * s) : (*this % a1).jacobi(a1) * s;
-    }
-
-    bool testSolovayStrassen()
-    {
-        BigNum zero(true);
-        BigNum one = zero + BASE(1);
-        BigNum four = one * BASE(4);
-        for (auto i = 0; i < 100; ++i)
+            s += 1;
+//            twoPow *= two;
+            r /= two;
+        } while(r % two == zero); //*/ && twoPow * r + one != *this);
+        auto four = one * BASE(4), z = getBarretZ(*this);
+        for (auto t = 1; t < 11; ++t)
         {
             auto size = rand() % len;
             if (!size) ++size;
-            BigNum a(size, false);
-            while (a >= *this - four or a == zero) a = BigNum(size, false);
-            a += BASE(2);
-            auto r = a.fastPowBarret((*this - one) / BASE(2), *this) % *this;
-            if (r != one) return false;
-            auto s = a.jacobi(*this);
-            if (r != s) return false;
+            BigNum b(size, false);
+            while (b >= *this - four or b == zero) b = BigNum(size, false);
+            b += BASE(2);
+            auto y = b.coolFastPowBarretZ(r, *this, z);
+            if (y != one && y != nMinus1)
+            {
+                for (QBASE i = 1; i < s && y != nMinus1; i += 1)
+                {
+//                    cout << ++asfsafdsaf << endl;
+                    y = y.coolFastPowBarretZ(two, *this, z);
+                    if (y == one) return false;
+                }
+                if (y == one && t == 10) return true;
+                if (y != nMinus1) return false;
+            }
+            cout << "round number " << t << " has been proceed" << endl;
         }
         return true;
     }
 
-
     bool isPrime()
     {
-        return testSolovayStrassen();
+        return testMillerRabin();
     }
 
-//
-//    static BigNum generatePrime(int primeLen) {
-//        //TODO: algorithm
-//        return truePrime;
-//    }
-//
-//    static BigNum strongPrimeGeneratorGordon(int l)
-//    {
-//        auto size = rand() % l;
-//        auto s = generatePrime(size);
-//        auto t = generatePrime(size);
-//        BigNum i(t.len - 1, false);
-//        BigNum r(1, true);
-//        for (; !r.testFerma(); i += BASE(1)) r = i * t * BASE(2) + 1;
-//        auto two = BigNum(1, true) + BASE(2);
-//        auto p = s.fastPowBarret(r - two, r);
-//        BigNum j(s.len - 1, false);
-//        for (; !p.testFerma(); j += BASE(1)) p += j * r * BASE(2);
-//        return p;
-//    }
+    static bool iequals(const string& a, const string& b)
+    {
+        return std::equal(a.begin(), a.end(),
+                          b.begin(), b.end(),
+                          [](char a, char b) {
+                              return tolower(a) == tolower(b);
+                          });
+    }
+
+
+    static BigNum phi(BigNum n)
+    {
+        BigNum zero(1, true);
+        auto i = zero + BASE(2), m = zero + BASE(1), one(m);
+        for (; i <= n / 2; i += BASE(1)) if(n % i == zero)
+            {
+                n /= i;
+                while (n % i == zero)
+                {
+                    m *= i;
+                    n /= i;
+                }
+                if (n == one) return m * (i - one);
+                else return m * (i - one) * phi(n);
+            }
+        return n - one;
+    }
+
+    string getProbabilityOf(const string& testName)
+    {
+        BigNum n(*this);
+        auto res = iequals(testName, "fermat") ? phi(n).to_string().append(" / ").append((*this).to_string()) :
+                   iequals(testName, "miller-rabin") ? phi(n).to_string().append(" / ").append((*this * BASE(4)).to_string()) :
+                   "no such test";
+        res.append("\n");
+        return res;
+    }
+
+
+    static BigNum generatePrime(int primeLen)
+    {
+        BigNum rnd(primeLen, false);
+//        auto u = 0;
+        while (!rnd.isPrime())
+        {
+//            cout << rnd.to_string() << " isn't a prime" << endl;
+            rnd = BigNum(primeLen, false);
+//            cout << "iter " << ++u << endl;
+        }
+//        cout << "True prime number: " << rnd.to_string() << endl;
+        return rnd;
+    }
+
+    static BigNum strongPrimeGeneratorGordon(int l)
+    {
+        auto size = l + rand() % 3;
+        auto s = generatePrime(size);
+        cout << "s = " << s.to_string() << endl;
+        size = l + rand() % 3;
+        auto t = generatePrime(size);
+        cout << "t = " << t.to_string() << endl;
+        BigNum i(1, false);
+        BigNum zero(1, true);
+        auto two = zero + BASE(2), one = zero + BASE(1);
+        auto r = i * t * two + one;
+//        int u = 0;
+        while (!r.isPrime())
+        {
+            r += t * two;
+//            cout << ++u << endl;
+        }
+        cout << "r = " << r.to_string() << endl;
+        auto z = getBarretZ(r);
+        auto p0 = s.coolFastPowBarretZ(r - two, r, z) * s * two - one;
+        BigNum j(size, false), p = p0 + j * r * s * two;
+        while (!p.isPrime())
+        {
+            p += r * s * two;
+//            j += one;
+//            cout << "p[" << j.to_string() << "] = " << p.to_string() << endl;
+        }
+        return p;
+    }
+
+    static int currentTimeMicrosec()
+    {
+        chrono::time_point<chrono::system_clock, chrono::microseconds> tp = chrono::time_point_cast<chrono::microseconds>(chrono::high_resolution_clock::now());
+        auto tmp = chrono::duration_cast<chrono::microseconds>(tp.time_since_epoch());
+        return tmp.count(); // NOLINT(cppcoreguidelines-narrowing-conversions)
+    }
+
+    static void call(int l, BigNum **that)
+    {
+
+        srand(currentTimeMicrosec() + rand());
+        *that = new BigNum(strongPrimeGeneratorGordon(l));
+    }
 
 };
