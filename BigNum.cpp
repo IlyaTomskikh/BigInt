@@ -1,5 +1,4 @@
 #include <iostream>
-#include <ctime>
 #include <algorithm>
 #include <random>
 #include <sstream>
@@ -12,11 +11,6 @@ using namespace std;
 typedef unsigned short BASE;
 typedef unsigned int DBASE;
 typedef unsigned long long QBASE;
-
-
-
-
-
 
 class BigNum
 {
@@ -263,8 +257,7 @@ public:
         }
         else
         {
-            cerr << "right operand must be less or equal" << endl;
-            return *this;
+            throw std::invalid_argument("right operand must be less or equal");
         }
         return sub;
     }
@@ -798,7 +791,6 @@ public:
         if (power.is1(0)) res = *this;
         else res += BASE(1);
         auto powerBits = power.bits();
-//        auto fpz = 0;
         for (auto i = 1; i < powerBits; ++i)
         {
             q = q.fastSQ();
@@ -814,7 +806,6 @@ public:
         BigNum q = BigNum(*this);
         q %= mod;
         auto powerBits = power.bits();
-//        auto fpz = 0;
         for (auto i = powerBits - 1; i--;)
         {
             q = q.fastSQ();
@@ -831,7 +822,7 @@ public:
         BigNum zero(1, true);
         auto one = zero + BASE(1);
         auto four = one * BASE(4);
-        for (auto t = 1; t < 101; ++t)
+        for (auto t = 0; t < 100; ++t)
         {
             auto size = rand() % len;
             if (!size) ++size;
@@ -840,7 +831,6 @@ public:
             a += BASE(2);
             auto r = a.fastPowBarret(*this - one, *this) % *this;
             if (r != one) return false;
-//            cout << "round number " << t << " has been proceed" << endl;
         }
         return true;
     }
@@ -849,21 +839,18 @@ public:
     {
         if (*this % BASE(2) == BASE(0)) return false;
         BigNum zero(1, true);
-        //BigNum s(1, true);
         QBASE s = 0;
         auto one = zero + BASE(1);
-//        BigNum twoPow(one);
         auto two = zero + BASE(2);
         BigNum nMinus1(*this - one);
         BigNum r(nMinus1);
         do
         {
             s += 1;
-//            twoPow *= two;
             r /= two;
-        } while(r % two == zero); //*/ && twoPow * r + one != *this);
+        } while(r % two == zero);
         auto four = one * BASE(4), z = getBarretZ(*this);
-        for (auto t = 1; t < 11; ++t)
+        for (auto t = 0; t < 100; ++t)
         {
             auto size = rand() % len;
             if (!size) ++size;
@@ -875,14 +862,12 @@ public:
             {
                 for (QBASE i = 1; i < s && y != nMinus1; i += 1)
                 {
-//                    cout << ++asfsafdsaf << endl;
                     y = y.coolFastPowBarretZ(two, *this, z);
                     if (y == one) return false;
                 }
                 if (y == one && t == 10) return true;
                 if (y != nMinus1) return false;
             }
-            cout << "round number " << t << " has been proceed" << endl;
         }
         return true;
     }
@@ -923,8 +908,8 @@ public:
     string getProbabilityOf(const string& testName)
     {
         BigNum n(*this);
-        auto res = iequals(testName, "fermat") ? phi(n).to_string().append(" / ").append((*this).to_string()) :
-                   iequals(testName, "miller-rabin") ? phi(n).to_string().append(" / ").append((*this * BASE(4)).to_string()) :
+        auto res = iequals(testName, "fermat") ? phi(n).fastPow(100).to_string().append(" / ").append((*this).fastPow(100).to_string()) :
+                   iequals(testName, "miller-rabin") ? phi(n).fastPow(100).to_string().append(" / ").append((*this * BASE(4)).fastPow(100).to_string()) :
                    "no such test";
         res.append("\n");
         return res;
@@ -934,14 +919,7 @@ public:
     static BigNum generatePrime(int primeLen)
     {
         BigNum rnd(primeLen, false);
-//        auto u = 0;
-        while (!rnd.isPrime())
-        {
-//            cout << rnd.to_string() << " isn't a prime" << endl;
-            rnd = BigNum(primeLen, false);
-//            cout << "iter " << ++u << endl;
-        }
-//        cout << "True prime number: " << rnd.to_string() << endl;
+        while (!rnd.isPrime()) rnd = BigNum(primeLen, false);
         return rnd;
     }
 
@@ -949,30 +927,23 @@ public:
     {
         auto size = l + rand() % 3;
         auto s = generatePrime(size);
-        cout << "s = " << s.to_string() << endl;
+        cout << "s = " << s << endl;
         size = l + rand() % 3;
         auto t = generatePrime(size);
-        cout << "t = " << t.to_string() << endl;
+        cout << "t = " << t << endl;
         BigNum i(1, false);
         BigNum zero(1, true);
         auto two = zero + BASE(2), one = zero + BASE(1);
         auto r = i * t * two + one;
-//        int u = 0;
+        cout << "r = " << r << endl;
         while (!r.isPrime())
         {
             r += t * two;
-//            cout << ++u << endl;
         }
-        cout << "r = " << r.to_string() << endl;
         auto z = getBarretZ(r);
         auto p0 = s.coolFastPowBarretZ(r - two, r, z) * s * two - one;
         BigNum j(size, false), p = p0 + j * r * s * two;
-        while (!p.isPrime())
-        {
-            p += r * s * two;
-//            j += one;
-//            cout << "p[" << j.to_string() << "] = " << p.to_string() << endl;
-        }
+        while (!p.isPrime()) p += r * s * two;
         return p;
     }
 
@@ -990,4 +961,145 @@ public:
         *that = new BigNum(strongPrimeGeneratorGordon(l));
     }
 
+    BigNum sqrt()
+    {
+        BigNum x(*this), x0;
+        do {
+            x0 = x;
+            x = (*this / x + x) / 2;
+        } while (x >= x0);
+        return x0;
+    }
+
+    vector<BigNum> fact()
+    {
+        vector<BigNum> res;
+        if (isPrime())
+        {
+            res.push_back(*this);
+            return res;
+        }
+        BigNum dk, three, five, seven, dkPrev, dkPrevPrev, one, n(*this), two, zero;
+        two += BASE(2);
+        while (n % BASE(2) == BASE(0))
+        {
+            res.push_back(two);
+            n /= BASE(2);
+        }
+        one += BASE(1);
+        zero = one - one;
+        three += BASE(3);
+        five += BASE(5);
+        seven += BASE(7);
+        auto ds = sqrt();
+        auto k = 1, preK = 0;
+        while (dk < ds && n > one)
+        {
+            if (k != preK) switch (k)
+            {
+                case 1:
+                    dk = three;
+                    break;
+                case 2:
+                    dkPrev = dk;
+                    dk = five;
+                    break;
+                case 3:
+                    dkPrevPrev = dkPrev;
+                    dkPrev = dk;
+                    dk = seven;
+                    break;
+                default:
+                    auto tmp = dkPrev;
+                    dkPrev = dk;
+                    dk = dkPrevPrev + BASE(6);
+                    dkPrevPrev = tmp;
+                    break;
+            }
+            auto q = n / dk, r = n % dk;
+            if (r == zero) {
+                res.push_back(dk);
+                preK = k;
+                n = q;
+            } else if (q > dk) {
+                preK = k;
+                ++k;
+            } else {
+                res.push_back(n);
+                break;
+            }
+        }
+        return res;
+    }
+
+    BigNum cuberoot()
+    {
+        auto root = *this / BASE(2);
+        BASE eps = 1;
+        while (root > *this / root + eps) root = (root + *this / root) / BASE(2);
+        return root;
+    }
+
+    BigNum supercoolcuberoot1337()
+    {
+        auto rn = *this;
+        BASE rootDegree = 7;
+        auto root = rn / BASE(rootDegree);
+        auto eps = 1;
+        while (root >= rn + eps)
+        {
+            rn = *this;
+            for (BASE i = 1; i < rootDegree; ++i) rn /= root;
+            root = (rn + root) / BASE(2);
+        }
+        return root;
+    }
+
+    BigNum superslowcuberoot()
+    {
+        BigNum root(*this), power;
+        root -= root;
+        root += BASE(1);
+        power = root * BASE(3);
+        while (root.fastPow(power) <= *this) root += BASE(1);
+        root -= BASE(1);
+        return root;
+    }
+
+    BigNum algorithmOlvey()
+    {
+        if (isPrime()) return *this;
+        if (*this % BASE(2) == BASE(0)) throw std::invalid_argument("n must be odd");
+        auto d = superslowcuberoot() * 2 + BASE(1);
+        auto zero = d - d;
+        auto two = zero + BASE(2);
+        auto four = two + two;
+        auto r1 = *this % d;
+        auto tmp = d - two;
+        auto r2 = *this % tmp;
+        auto q = (*this / tmp - *this / d) * BASE(4);
+        auto s = sqrt();
+        while (d <= s)
+        {
+            d += BASE(2);
+            BigNum r = r1 * 2 + q;
+            try
+            {
+                r = r - r2;
+            } catch (const std::invalid_argument &argument)
+            {
+                r += d;
+                q += BASE(4);
+            }
+            r2 = r1;
+            r1 = r;
+            if (r1 >= d)
+            {
+                r1 -= d;
+                q -= four;
+            }
+            if (r1 == zero) break;
+        }
+        return d;
+    }
 };
