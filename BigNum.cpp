@@ -3,6 +3,7 @@
 #include <random>
 #include <sstream>
 #include <chrono>
+#include <map>
 
 ///short == 16
 #define BASE_SIZE (sizeof(BASE)*8)
@@ -257,7 +258,7 @@ public:
         }
         else
         {
-            throw std::invalid_argument("right operand must be less or equal");
+            throw invalid_argument("right operand must be less or equal");
         }
         return sub;
     }
@@ -967,7 +968,7 @@ public:
         do {
             x0 = x;
             x = (*this / x + x) / 2;
-        } while (x >= x0);
+        } while (x < x0);
         return x0;
     }
 
@@ -986,13 +987,14 @@ public:
             res.push_back(two);
             n /= BASE(2);
         }
-        one += BASE(1);
-        zero = one - one;
-        three += BASE(3);
-        five += BASE(5);
-        seven += BASE(7);
+        one             += BASE(1);
+        zero            = one - one;
+        three           += BASE(3);
+        five            += BASE(5);
+        seven           += BASE(7);
         auto ds = sqrt();
-        auto k = 1, preK = 0;
+        auto    k       = 1,
+                preK    = 0;
         while (dk < ds && n > one)
         {
             if (k != preK) switch (k)
@@ -1001,26 +1003,27 @@ public:
                     dk = three;
                     break;
                 case 2:
-                    dkPrev = dk;
-                    dk = five;
+                    dkPrev  = dk;
+                    dk      = five;
                     break;
                 case 3:
-                    dkPrevPrev = dkPrev;
-                    dkPrev = dk;
-                    dk = seven;
+                    dkPrevPrev  = dkPrev;
+                    dkPrev      = dk;
+                    dk          = seven;
                     break;
                 default:
-                    auto tmp = dkPrev;
-                    dkPrev = dk;
-                    dk = dkPrevPrev + BASE(6);
-                    dkPrevPrev = tmp;
+                    auto tmp    = dkPrev;
+                    dkPrev              = dk;
+                    dk                  = dkPrevPrev + BASE(6);
+                    dkPrevPrev          = tmp;
                     break;
             }
-            auto q = n / dk, r = n % dk;
+            auto    q = n / dk,
+                    r = n % dk;
             if (r == zero) {
                 res.push_back(dk);
-                preK = k;
-                n = q;
+                preK    = k;
+                n       = q;
             } else if (q > dk) {
                 preK = k;
                 ++k;
@@ -1032,7 +1035,7 @@ public:
         return res;
     }
 
-    BigNum cuberoot()
+    BigNum easycuberoot()
     {
         auto root = *this / BASE(2);
         BASE eps = 1;
@@ -1042,10 +1045,10 @@ public:
 
     BigNum supercoolcuberoot1337()
     {
-        auto rn = *this;
-        BASE rootDegree = 7;
-        auto root = rn / BASE(rootDegree);
-        auto eps = 1;
+        BASE rootDegree     = 7;
+        auto rn     = *this;
+        auto root   = rn / BASE(rootDegree);
+        auto eps            = 1;
         while (root >= rn + eps)
         {
             rn = *this;
@@ -1057,49 +1060,121 @@ public:
 
     BigNum superslowcuberoot()
     {
-        BigNum root(*this), power;
-        root -= root;
-        root += BASE(1);
-        power = root * BASE(3);
-        while (root.fastPow(power) <= *this) root += BASE(1);
-        root -= BASE(1);
+        BigNum one;
+        one                 -= one;
+        one                 += BASE(1);
+        auto power  = one * BASE(3);
+        auto root = sqrt();
+        for (; root.fastPow(power) > *this; root -= one);
         return root;
     }
 
-    BigNum algorithmOlvey()
+    BigNum cyberRootByGrisha()
+    {
+        BigNum five;
+        five -= five;
+        five += BASE(5);
+        return sqrt().sqrt().sqrt().sqrt().fastPow(five);
+    }
+
+    BigNum cbrt()
+    {
+        return superslowcuberoot();
+    }
+
+    BigNum algorithmAlway()
     {
         if (isPrime()) return *this;
-        if (*this % BASE(2) == BASE(0)) throw std::invalid_argument("n must be odd");
-        auto d = superslowcuberoot() * 2 + BASE(1);
-        auto zero = d - d;
-        auto two = zero + BASE(2);
-        auto four = two + two;
-        auto r1 = *this % d;
-        auto tmp = d - two;
-        auto r2 = *this % tmp;
-        auto q = (*this / tmp - *this / d) * BASE(4);
-        auto s = sqrt();
-        while (d <= s)
+        if (*this % BASE(2) == BASE(0)) throw invalid_argument("n must be odd");
+        auto d      = cbrt() * BASE(2) + BASE(1);
+        auto zero   = d - d;
+        auto two    = zero + BASE(2);
+        auto four   = two + two;
+        auto r1     = *this % d;
+        auto tmp    = d - two;
+        auto r2     = *this % tmp;
+        auto q      = (*this / tmp - *this / d) * BASE(4);
+        auto s      = sqrt();
+//        cout << "s = sqrt(n) = " << s << endl;
+        if (d > s) throw runtime_error("d > s");
+//        cout << "d " << d << " r1 " << r1 << " r2 " << r2 << " q " << q << endl;
+        while (r1 != zero)
         {
             d += BASE(2);
-            BigNum r = r1 * 2 + q;
+            BigNum  r = r1 * 2 + q;
             try
             {
-                r = r - r2;
-            } catch (const std::invalid_argument &argument)
+                r -= r2;
+            } catch (const invalid_argument &argument)
             {
+                //r1<0
                 r += d;
+                r -= r2;
                 q += BASE(4);
             }
             r2 = r1;
             r1 = r;
-            if (r1 >= d)
+            while (r1 >= d)
             {
                 r1 -= d;
                 q -= four;
             }
-            if (r1 == zero) break;
+            if (d > s) throw runtime_error("d > s");
+//            cout << "d " << d << " r1 " << r1 << " r2 " << r2 << " q " << q << endl;
         }
+        return d;
+    }
+
+    friend pair<BigNum, BigNum> methodFermat(BigNum n)
+    {
+        if (n.isPrime()) throw runtime_error("n is a prime number");
+        if (n % BASE(2) == BASE(0)) throw runtime_error("n must be odd");
+        auto x = n.sqrt();
+        if (x.fastSQ() == n) return make_pair(x, x);
+        BigNum  y, z;
+        do {
+            x += BASE(1);
+            if (x == (n + BASE(1)) / BASE(2)) throw runtime_error("n is a prime number");
+            z = x.fastSQ() - n;
+            y = z.sqrt();
+        } while (y.fastSQ() != z);
+        return make_pair(x + y, x - y);
+    }
+
+    BigNum roHelper(BASE c, BigNum n)
+    {
+        return (fastSQ() + c) % n;
+    }
+
+    BigNum gcd(BigNum n)
+    {
+        BigNum zero, a(*this), b(n);
+        zero -= zero;
+        while (a != zero and b != zero)
+        {
+            if (a > b) a %= b;
+            else b %= a;
+        }
+        return a + b;
+    }
+
+    BigNum roMethod()
+    {
+        BigNum a, b, d, one;
+        a -= a;
+        a += BASE(2);
+        b = a;
+        one -= one;
+        one += BASE(1);
+        do {
+            a = a.roHelper(BASE(1), *this);
+            b = b.roHelper(BASE(1), *this);
+            b = b.roHelper(BASE(1), *this);
+            cout << "a = " << a << " b = " << b << endl;
+            if (a == b) throw runtime_error("No result: a == b");
+            d = (a > b) ? (a - b).gcd(*this) : (b - a).gcd(*this);
+            cout << "gcd = " << d << endl;
+        } while(d == one);
         return d;
     }
 };

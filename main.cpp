@@ -1,6 +1,7 @@
 #include <iomanip>
 #include <future>
 #include <thread>
+#include <bits/stdc++.h>
 #include "BigNum.cpp"
 
 //        cout << test << (test.isPrime() == 1 ? " is a prime number" : " is not a prime number") << endl;
@@ -82,14 +83,26 @@ int main()
 
     BigNum bigNum;
     bigNum.in10();
-    auto res = bigNum.fact();
-    for (BigNum factor: res) cout << factor << "; ";
+//    auto res = bigNum.fact();
+//    for (BigNum factor: res) cout << factor << "; ";
+//
+//    cout << endl;
 
-//    auto cr = bigNum.superslowcuberoot();
-//    cout << endl << "cuberoot(" << bigNum << ") = " << cr << endl;
+//    BigNum d;
+//    try {
+//        d = bigNum.algorithmAlway();
+//        cout << "d = " << d << endl;
+//    } catch (const runtime_error &error) {
+//        cerr << "Delitelya net: " << error.what() << endl;
+//    }
+//
+//    auto pair = methodFermat(bigNum);
+//
+//    cout << "a = " << pair.first << ", b = " << pair.second << endl;
 
-    auto d = bigNum.algorithmOlvey();
+    auto d = bigNum.roMethod();
     cout << "d = " << d << endl;
+
 
     cout << endl << "--- 777 777 777 777 777 777 ---" << endl;
 
